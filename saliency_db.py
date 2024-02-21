@@ -52,6 +52,8 @@ def read_sal_text(txt_file):
 
 def make_dataset(root_path, annotation_path, salmap_path, audio_path,
 				 step, step_duration):
+	# 间隔step开始采样，采样长度是step_duration
+	# step=5, s_d=3: [0,1,2], [5,6,7] 
 	data = read_sal_text(annotation_path)
 	video_names = data['names']
 	video_nframes = data['nframes']
@@ -138,20 +140,21 @@ class saliency_db(data.Dataset):
 				 spatial_transform = None,
 				 temporal_transform = None,
 				 exhaustive_sampling = False,
-				 sample_duration = 16,
-				 step_duration = 90):
+				 sample_duration = 16,	# 最后要的长度
+				 step_duration = 90):	# 空余采样的长度
 
-		if exhaustive_sampling:
+		if exhaustive_sampling:	# 如果彻底采样， 窗口每次移动一帧
 			self.exhaustive_sampling = True
-			step = 1
-			step_duration = sample_duration
+			step = 1			# 窗口每次移动一帧
+			final_duration = sample_duration	# 最终采样数量=最后要的长度
 		else:
-			self.exhaustive_sampling = False
-			step = max(1, step_duration - sample_duration)
+			self.exhaustive_sampling = False	# 空余采样
+			step = max(1, step_duration - sample_duration)	# 窗口每次移动=空余采样-最终(为了信息完整吧)
+			final_duration = step_duration		# 最终采样数量=空余采样长度(transform里面随机裁剪)
 
 		self.data, self.audiodata = make_dataset(
 			root_path, annotation_path, subset, audio_path,
-			step, step_duration)
+			step, final_duration)	# 窗口移动的帧数， 窗口的长度
 
 		self.spatial_transform = spatial_transform
 		self.temporal_transform = temporal_transform

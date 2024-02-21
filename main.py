@@ -9,7 +9,7 @@ import torch
 import torchvision
 import torchaudio
 
-from data.dataset import get_dataloader
+from dataset import get_dataloader
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
