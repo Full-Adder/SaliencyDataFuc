@@ -6,14 +6,9 @@ from .util import TemporalRandomCrop, SpatialTransform, ToTensor
 import matplotlib.pyplot as plt
 
 def get_dataset(root, mode, datasetName_list, 
-				spatial_transform=None, temporal_transform=None,
+				spatial_transform, temporal_transform,
 				sample_duration=16, step_duration=90):
 	assert mode in ['train', 'val', 'test']
-
-	if spatial_transform == None:
-		spatial_transform = SpatialTransform(mode, 256, 224, (0.3818, 0.3678, 0.3220), (0.2727, 0.2602, 0.2568))
-	if mode!="test" and temporal_transform == None:
-		temporal_transform = TemporalRandomCrop(sample_duration)
 	
 	txt_mode = 'train' if mode == 'train' else 'test' 
 	all_dataset = []
@@ -43,10 +38,18 @@ def get_dataloader(root:str, mode:str,
 				   batch_size:int=8, num_workers:int=4,
 				   sample_duration:int=16,		# 最终采样长度
 				   step_duration:int=90,		# 空余采样长度
+				   spatial_transform=None,
+				   temporal_transform=None,
 				   infoBatch_epoch:int=-1,		# is use infoBatch
 				   ):
 	
 	assert mode in ['train', 'val', 'test']
+	if spatial_transform == None:
+		spatial_transform = SpatialTransform(mode, 256, 112, (0.3818, 0.3678, 0.3220), (0.2727, 0.2602, 0.2568))
+	if temporal_transform == None:
+		temporal_transform = TemporalRandomCrop(sample_duration)
+
+
 	txt_mode = 'train' if mode == 'train' else 'test' 
 	all_dataset = []
 
@@ -59,8 +62,8 @@ def get_dataloader(root:str, mode:str,
 			f'{root}/fold_lists/{dataset_name}_list_{txt_mode}_1_fps.txt',
 			f'{root}/annotations/{dataset_name}/',
 			f'{root}/video_audio/{dataset_name}/',
-			spatial_transform=SpatialTransform(mode, 256, 224, (0.3818, 0.3678, 0.3220), (0.2727, 0.2602, 0.2568)),
-			temporal_transform=None if mode =='test' else TemporalRandomCrop(sample_duration),
+			spatial_transform=spatial_transform,
+			temporal_transform=None if mode =='test' else temporal_transform,
 			exhaustive_sampling=(mode == 'test'),
 			sample_duration=sample_duration,	# 采样长度
 			step_duration=step_duration,		# 窗口长度
@@ -89,4 +92,3 @@ def get_dataloader(root:str, mode:str,
 		return data_loader, data_set
 	else:
 		return data_loader
-
