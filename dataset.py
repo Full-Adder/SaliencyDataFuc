@@ -1,9 +1,7 @@
 import torch
 from .saliency_db import saliency_db
 from torchvision import transforms as tfs
-from .util import TemporalRandomCrop, SpatialTransform, ToTensor
-
-import matplotlib.pyplot as plt
+from .util import TemporalRandomCrop, SpatialTransform
 
 def get_dataset(root, mode, datasetName_list, 
 				spatial_transform, temporal_transform,
