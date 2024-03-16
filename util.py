@@ -1,6 +1,5 @@
 import random
 import torch
-import torchvision.transforms as tfs
 import torchvision.transforms.functional as F
 from torchvision.transforms import InterpolationMode
 
@@ -31,21 +30,18 @@ class ToTensor:
 
 
 class Resize(torch.nn.Module):
-    def __init__(self, size, interpolation=InterpolationMode.BILINEAR, max_size=None, antialias="warn"):
+    def __init__(self, size):
         super().__init__()
         self.size = size
-        self.max_size = max_size
-        self.interpolation = interpolation
-        self.antialias = antialias
 
     def forward(self, img):
-        return F.resize(img, self.size, self.interpolation, self.max_size, self.antialias)
+        return F.resize(img, (self.size, self.size), InterpolationMode.BILINEAR)
 
     def randomize_parameters(self):
         pass
 
     def __repr__(self) -> str:
-        detail = f"(size={self.size}, interpolation={self.interpolation.value}, max_size={self.max_size}, antialias={self.antialias})"
+        detail = f"(size={self.size})"
         return f"{self.__class__.__name__}{detail}"
 
 
