@@ -72,16 +72,14 @@ def make_dataset(root_path, annotation_path, salmap_path, audio_path,
 		annot_path_bin = os.path.join(salmap_path, video_names[i])
 		audio_wav_path = os.path.join(audio_path,video_names[i],video_names[i]+'.wav')
 
-		if not os.path.exists(video_path) or not os.path.exists(annot_path) or not os.path.exists(annot_path_bin) or not os.path.exists(audio_wav_path):
+		if not os.path.exists(video_path) or not os.path.exists(annot_path) or \
+		   not os.path.exists(annot_path_bin) or not os.path.exists(audio_wav_path):
 			# print('Path does not all exist: {}'.format(video_path))
 			continue
 
-		n_frames = int(video_nframes[i])
-		if n_frames <= 1:
+		n_frames = int(video_nframes[i])	# 此视频一共帧数
+		if n_frames < step_duration:
 			continue
-
-		begin_t = 1
-		end_t = n_frames
 
 		# print(torchaudio.info(audio_wav_path))
 		[audiowav,Fs]=torchaudio.load(audio_wav_path)   # FS 是采样率，指代每秒钟采样的次数， audiowav 是一个tensor，第一维是声道数，第二维是采样点数
@@ -115,7 +113,7 @@ def make_dataset(root_path, annotation_path, salmap_path, audio_path,
 
 		sample = {
 			'video': video_path,
-			'segment': [begin_t, end_t],
+			'segment': [1, n_frames],
 			'n_frames': n_frames,
 			'fps': video_fps[i],
 			'video_id': video_names[i],
@@ -177,7 +175,7 @@ class saliency_db(data.Dataset):
 		valid['audio']=0
 
 		frame_ind_start = frame_indices[0]
-		frame_ind_end = frame_indices[len(frame_indices)-1]
+		frame_ind_end = frame_indices[-1]
 
 		video_name=self.data[index]['video_id']
 		excerptstart = self.audiodata[video_name]['starts'][frame_ind_start]

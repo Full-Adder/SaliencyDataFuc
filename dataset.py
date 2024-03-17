@@ -38,6 +38,7 @@ def get_dataloader(root:str, mode:str,
 				   step_duration:int=90,		# 空余采样长度
 				   spatial_transform=None,
 				   temporal_transform=None,
+				   pin_memory:bool=True,
 				   infoBatch_epoch:int=-1,		# is use infoBatch
 				   ):
 	
@@ -61,7 +62,7 @@ def get_dataloader(root:str, mode:str,
 			f'{root}/annotations/{dataset_name}/',
 			f'{root}/video_audio/{dataset_name}/',
 			spatial_transform=spatial_transform,
-			temporal_transform=None if mode =='test' else temporal_transform,
+			temporal_transform= temporal_transform,
 			exhaustive_sampling=(mode == 'test'),
 			sample_duration=sample_duration,	# 采样长度
 			step_duration=step_duration,		# 窗口长度
@@ -82,7 +83,7 @@ def get_dataloader(root:str, mode:str,
 		batch_size=batch_size,
 		num_workers=num_workers,
 		shuffle=(mode == 'train' and infoBatch_epoch<=0),
-		pin_memory=True,
+		pin_memory=pin_memory,
 		drop_last=(mode == 'train'),
 		sampler = data_set.sampler if infoBatch_epoch>0 else None)
 
