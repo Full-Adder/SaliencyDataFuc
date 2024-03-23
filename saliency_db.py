@@ -135,8 +135,9 @@ class saliency_db(data.Dataset):
 				 annotation_path,
 				 subset,
 				 audio_path,
-				 spatial_transform = None,
-				 temporal_transform = None,
+				 spatial_transform,
+				 spatial_transform_norm,
+				 temporal_transform,
 				 exhaustive_sampling = False,
 				 sample_duration = 16,	# 最后要的长度
 				 step_duration = 90):	# 空余采样的长度
@@ -156,6 +157,7 @@ class saliency_db(data.Dataset):
 
 		self.spatial_transform = spatial_transform
 		self.temporal_transform = temporal_transform
+		self.spatial_transform_norm = spatial_transform_norm
 		max_audio_Fs = 22050
 		min_video_fps = 10
 		self.max_audio_win = int(max_audio_Fs / min_video_fps * sample_duration)
@@ -202,21 +204,13 @@ class saliency_db(data.Dataset):
 		# if self.exhaustive_sampling:
 		# 	target['video'] = self.data[index]['video_id']
 		clip = video_loader(path, frame_indices)
-
-		if self.spatial_transform is not None:
-			self.spatial_transform.randomize_parameters()
-			clip = [self.spatial_transform(img) for img in clip]
-			
-			self.spatial_transform_sal = copy.deepcopy(self.spatial_transform)
-			del self.spatial_transform_sal.transforms[-1]
-
-			target['salmap'] = self.spatial_transform_sal(target['salmap'])
-			target['binmap'] = self.spatial_transform_sal(target['binmap'])
-			target['binmap'] = torch.gt(target['binmap'], 0.0).float()
-		try:
-			clip = torch.stack(clip, 0).permute(1, 0, 2, 3)
-		except:
-			pass
+		
+		clip, target['salmap'], target['binmap'] = self.spatial_transform(clip, target['salmap'], target['binmap'])
+		clip = self.spatial_transform_norm(clip)
+		clip = torch.stack(clip, 0).permute(1, 0, 2, 3)
+		# print((target['salmap']>0).sum())
+		target['binmap'] = torch.gt(target['binmap'], 0.0)
+		# print((target['salmap']>0).sum())
 
 		valid['sal'] = 1
 		data['rgb'] = clip

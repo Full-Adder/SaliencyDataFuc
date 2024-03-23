@@ -1,7 +1,8 @@
 import torch
 from .saliency_db import saliency_db
 from torchvision import transforms as tfs
-from .util import TemporalRandomCrop, SpatialTransform
+from .util import TemporalRandomCrop, SpatialTransform, SpatialTransform_norm
+from torchvision.transforms.v2 import Normalize
 
 def get_dataset(root, mode, datasetName_list, 
 				spatial_transform, temporal_transform,
@@ -37,6 +38,7 @@ def get_dataloader(root:str, mode:str,
 				   sample_duration:int=16,		# 最终采样长度
 				   step_duration:int=90,		# 空余采样长度
 				   spatial_transform=None,
+				   spatial_transform_norm=None,
 				   temporal_transform=None,
 				   pin_memory:bool=True,
 				   infoBatch_epoch:int=-1,		# is use infoBatch
@@ -44,7 +46,9 @@ def get_dataloader(root:str, mode:str,
 	
 	assert mode in ['train', 'val', 'test']
 	if spatial_transform == None:
-		spatial_transform = SpatialTransform(mode, 256, 112, (0.3818, 0.3678, 0.3220), (0.2727, 0.2602, 0.2568))
+		spatial_transform = SpatialTransform(mode, 112)
+	if spatial_transform_norm == None:
+		spatial_transform_norm = SpatialTransform_norm((0.3818, 0.3678, 0.3220), (0.2727, 0.2602, 0.2568))
 	if temporal_transform == None:
 		temporal_transform = TemporalRandomCrop(sample_duration)
 
@@ -62,6 +66,7 @@ def get_dataloader(root:str, mode:str,
 			f'{root}/annotations/{dataset_name}/',
 			f'{root}/video_audio/{dataset_name}/',
 			spatial_transform=spatial_transform,
+			spatial_transform_norm=spatial_transform_norm,
 			temporal_transform= temporal_transform,
 			exhaustive_sampling=(mode == 'test'),
 			sample_duration=sample_duration,	# 采样长度
