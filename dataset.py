@@ -1,8 +1,6 @@
 import torch
 from .saliency_db import saliency_db
-from torchvision import transforms as tfs
 from .util import TemporalRandomCrop, SpatialTransform, SpatialTransform_norm
-from torchvision.transforms.v2 import Normalize
 
 def get_dataset(root, mode, datasetName_list, 
 				spatial_transform, temporal_transform,
@@ -35,6 +33,7 @@ def get_dataset(root, mode, datasetName_list,
 def get_dataloader(root:str, mode:str, 
 				   datasetName_list:list=['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD'], 
 				   batch_size:int=8, num_workers:int=4,
+				   sample_size:int=112,			# 输入尺寸
 				   sample_duration:int=16,		# 最终采样长度
 				   step_duration:int=90,		# 空余采样长度
 				   spatial_transform=None,
@@ -46,7 +45,7 @@ def get_dataloader(root:str, mode:str,
 	
 	assert mode in ['train', 'val', 'test']
 	if spatial_transform == None:
-		spatial_transform = SpatialTransform(mode, 112)
+		spatial_transform = SpatialTransform(mode, sample_size)
 	if spatial_transform_norm == None:
 		spatial_transform_norm = SpatialTransform_norm((0.3818, 0.3678, 0.3220), (0.2727, 0.2602, 0.2568))
 	if temporal_transform == None:
