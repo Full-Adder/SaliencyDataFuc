@@ -46,7 +46,7 @@ def create_colormap_floader(heatmap_floader, img_floader, save_floader, size=(11
             print(f"create {save_path} color_map success")
 
 if __name__ == "__main__":
-    create_colormap('eyeMap_00001.jpg', 'img_00001.jpg', 'color_map.png', (640, 480))
+    create_colormap('SaliencyDataFuc/eyeMap_00001.jpg', 'SaliencyDataFuc/img_00001.jpg', 'SaliencyDataFuc/color_map.png', (640, 480))
     # create_colormap_floader('heatmap_floader', 'img_floader', 'color_map_floader')
 
     
