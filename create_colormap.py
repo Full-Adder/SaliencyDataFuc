@@ -28,9 +28,14 @@ def create_colormap_floader(heatmap_floader, img_floader, save_floader, size=(11
     
     img_list = os.listdir(img_floader)
     for img_name in img_list:
+        if '.jpg' not in img_name:
+            print(f"{img_name} not a image")
+            continue
         img_id = int(img_name.split('.')[0][-5:])
 
+        # heatmap_path = os.path.join(heatmap_floader, f'pred_sal_{img_id:05d}.jpg')
         heatmap_path = os.path.join(heatmap_floader, f'eyeMap_{img_id:05d}.jpg')
+
         img_path = os.path.join(img_floader, f'img_{img_id:05d}.jpg')
         save_path = os.path.join(save_floader, f'color_map_{img_id:05d}.jpg')
 
@@ -46,8 +51,20 @@ def create_colormap_floader(heatmap_floader, img_floader, save_floader, size=(11
             print(f"create {save_path} color_map success")
 
 if __name__ == "__main__":
-    create_colormap('SaliencyDataFuc/eyeMap_00001.jpg', 'SaliencyDataFuc/img_00001.jpg', 'SaliencyDataFuc/color_map.jpg', (640, 480))
-    # create_colormap_floader('heatmap_floader', 'img_floader', 'color_map_floader')
+    # create_colormap('SaliencyDataFuc/eyeMap_00001.jpg', 'SaliencyDataFuc/img_00001.jpg', 'SaliencyDataFuc/color_map.jpg', (640, 480))
+    
+    # create_gt
+    sal_path = "/root/lanyun-tmp/data/annotations/"
+    img_path = "/root/lanyun-tmp/data/video_frames/"
+    save_path = "/root/lanyun-tmp/data/color_gt/"
+    for dataset in os.listdir(sal_path):
+        dataset_path = os.path.join(sal_path, dataset)
+        for video in os.listdir(dataset_path):
+            video_path = os.path.join(dataset_path, video)
+            saliency_pic = os.path.join(video_path, 'maps')
+            img_pic = os.path.join(img_path, dataset, video)
+            save_pic = os.path.join(save_path, dataset, video)
+            create_colormap_floader(saliency_pic, img_pic, save_pic, (640, 480))
 
     
 
