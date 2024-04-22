@@ -43,7 +43,7 @@ def get_dataloader(root:str, mode:str,
 				   infoBatch_epoch:int=-1,		# is use infoBatch
 				   ):
 	
-	assert mode in ['train', 'val', 'test']
+	assert mode in ['train', 'val', 'test'], f"mode should be 'train', 'val' or 'test', but got {mode}"
 	if spatial_transform == None:
 		spatial_transform = SpatialTransform(mode, sample_size)
 	if spatial_transform_norm == None:
