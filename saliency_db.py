@@ -73,7 +73,9 @@ def make_dataset(root_path, annotation_path, salmap_path, audio_path,
 		video_path = os.path.join(root_path, video_names[i])
 		annot_path = os.path.join(salmap_path, video_names[i], 'maps')
 		annot_path_bin = os.path.join(salmap_path, video_names[i])
-		audio_wav_path = os.path.join(audio_path,video_names[i],video_names[i]+'.wav')
+		audio_wav_path = os.path.join(audio_path,video_names[i])
+
+		audio_wav_path = audio_wav_path+'/'+ audio_wav_path.split('/')[-1]+'.wav'
 
 		if not os.path.exists(video_path) or not os.path.exists(annot_path) or \
 		   not os.path.exists(annot_path_bin) or not os.path.exists(audio_wav_path):

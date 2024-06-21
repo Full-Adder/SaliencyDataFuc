@@ -2,36 +2,8 @@ import torch
 from saliency_db import saliency_db
 from transforms import TemporalRandomCrop, SpatialTransform, SpatialTransform_norm
 
-def get_dataset(root, mode, datasetName_list, 
-				spatial_transform, temporal_transform,
-				sample_duration=16, step_duration=90):
-	assert mode in ['train', 'val', 'test']
-	
-	txt_mode = 'train' if mode == 'train' else 'test' 
-	all_dataset = []
-
-	for dataset_name in datasetName_list:
-		assert dataset_name in ['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD']
-		print(f'************************ Creating {mode} dataset: {dataset_name}... ************************')
-
-		training_data = saliency_db(
-			f'{root}/video_frames/{dataset_name}/',
-			f'{root}/fold_lists/{dataset_name}_list_{txt_mode}_1_fps.txt',
-			f'{root}/annotations/{dataset_name}/',
-			f'{root}/video_audio/{dataset_name}/',
-			spatial_transform=spatial_transform,
-			temporal_transform=temporal_transform,
-			exhaustive_sampling=(mode == 'test'),
-			sample_duration=sample_duration,
-			step_duration=step_duration,
-			)
-
-		all_dataset.append(training_data)
-	return torch.utils.data.ConcatDataset(all_dataset)
-
-
-def get_dataloader(root:str, mode:str, 
-				   datasetName_list:list=['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD'], 
+def get_dataloader(root:str, mode:str, task:str,
+				   datasetName_list:list=None, 
 				   batch_size:int=8, num_workers:int=4,
 				   sample_size:int=112,			# 输入尺寸
 				   sample_duration:int=16,		# 最终采样长度
@@ -44,6 +16,21 @@ def get_dataloader(root:str, mode:str,
 				   ):
 	
 	assert mode in ['train', 'val', 'test'], f"mode should be 'train', 'val' or 'test', but got {mode}"
+	assert task in ['class_increase', 'domain_increase'], f"task should be 'class_increase' or 'domain_increase', but got {task}"
+	
+	if task == 'class_increase':
+		if datasetName_list == None:
+			datasetName_list = ['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD']
+		else:
+			for i in datasetName_list:
+				assert i in ['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD'], f"datasetName_list should be ['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD'], but got {datasetName_list}"
+	elif task == 'domain_increase':
+		if datasetName_list == None:
+			datasetName_list = ['doing', 'nature', 'society', 'something', 'talk']
+		else:
+			for i in datasetName_list:
+				assert i in ['doing', 'nature', 'society', 'something', 'talk'], f"datasetName_list should be ['doing', 'nature', 'society', 'something', 'talk'], but got {datasetName_list}"
+
 	if spatial_transform == None:
 		spatial_transform = SpatialTransform(mode, sample_size)
 	if spatial_transform_norm == None:
@@ -58,19 +45,33 @@ def get_dataloader(root:str, mode:str,
 	for dataset_name in datasetName_list:
 		print(f"load dataset: {dataset_name}({mode})...")
 
-		assert dataset_name in ['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD']
-		training_data = saliency_db(
-			f'{root}/video_frames/{dataset_name}/',
-			f'{root}/fold_lists/{dataset_name}_list_{txt_mode}_1_fps.txt',
-			f'{root}/annotations/{dataset_name}/',
-			f'{root}/video_audio/{dataset_name}/',
-			spatial_transform=spatial_transform,
-			spatial_transform_norm=spatial_transform_norm,
-			temporal_transform= temporal_transform,
-			exhaustive_sampling=(mode == 'test'),
-			sample_duration=sample_duration,	# 采样长度
-			step_duration=step_duration,		# 窗口长度
-			)
+		if task == 'class_increase':
+			training_data = saliency_db(
+				f'{root}/video_frames/{dataset_name}/',
+				f'{root}/fold_lists/{dataset_name}_list_{txt_mode}_1_fps.txt',
+				f'{root}/annotations/{dataset_name}/',
+				f'{root}/video_audio/{dataset_name}/',
+				spatial_transform=spatial_transform,
+				spatial_transform_norm=spatial_transform_norm,
+				temporal_transform= temporal_transform,
+				exhaustive_sampling=(mode == 'test'),
+				sample_duration=sample_duration,	# 采样长度
+				step_duration=step_duration,		# 窗口长度
+				)
+
+		elif task == 'domain_increase':
+			training_data = saliency_db(
+				f'{root}/video_frames/',
+				f'{root}/class_category/{dataset_name}_{txt_mode}.txt',
+				f'{root}/annotations/',
+				f'{root}/video_audio/',
+				spatial_transform=spatial_transform,
+				spatial_transform_norm=spatial_transform_norm,
+				temporal_transform= temporal_transform,
+				exhaustive_sampling=(mode == 'test'),
+				sample_duration=sample_duration,	# 采样长度
+				step_duration=step_duration,		# 窗口长度
+				)
 		
 		all_dataset.append(training_data)
 	
