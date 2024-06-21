@@ -21,7 +21,8 @@ def set_seed(seed=1):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed) 
 
-saliency_path = r"D:\WorkPlace\Python\Mywork\data" if platform.system()=="Windows" else r"~/data/saliency_data/"
+saliency_path = r"/home/wjq/workplace/data/saliency_data/"
+
 
 if __name__ == "__main__":
     print(f"use {platform.system()}, torch {torch.__version__}, torchvision {torchvision.__version__}, torchaudio {torchaudio.__version__}")
@@ -30,5 +31,4 @@ if __name__ == "__main__":
         print(i, data['rgb'].shape, data['audio'].shape, target['salmap'].shape, target['binmap'].shape)
         break
 
-# test ENCU PC
 

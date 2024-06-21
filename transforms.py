@@ -78,3 +78,4 @@ if __name__ == "__main__":
     t = SpatialTransform('train', 224)
     d = t([img, img, img, img])
     print(d[0].shape, d[1].shape, d[2].shape, d[3].shape)
+    print(d[0]-d[1])

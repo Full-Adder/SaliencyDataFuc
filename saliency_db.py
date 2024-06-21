@@ -4,8 +4,11 @@ import numpy as np
 
 import torch
 import torchaudio
-import torch.utils.data as data
+import torchvision
+torchvision.set_image_backend('accimage')
+from torch.utils.data import Dataset
 import scipy.io as sio
+import cv2
 
 from PIL import Image
 from numpy import median
@@ -129,7 +132,7 @@ def make_dataset(root_path, annotation_path, salmap_path, audio_path,
 	return dataset, audiodata
 
 
-class saliency_db(data.Dataset):
+class saliency_db(Dataset):
 	def __init__(self,
 				 root_path,
 				 annotation_path,
@@ -204,6 +207,7 @@ class saliency_db(data.Dataset):
 		if self.exhaustive_sampling:
 			target['video'] = self.data[index]['video_id']
 		clip = video_loader(path, frame_indices)
+		# print(self.data[index]['video_id'], len(clip), len(frame_indices), len(target['salmap']))
 		
 		clip, target['salmap'], target['binmap'] = self.spatial_transform(clip, target['salmap'], target['binmap'])
 		clip = self.spatial_transform_norm(clip)

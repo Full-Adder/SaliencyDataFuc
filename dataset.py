@@ -1,6 +1,6 @@
 import torch
-from .saliency_db import saliency_db
-from .util import TemporalRandomCrop, SpatialTransform, SpatialTransform_norm
+from saliency_db import saliency_db
+from transforms import TemporalRandomCrop, SpatialTransform, SpatialTransform_norm
 
 def get_dataset(root, mode, datasetName_list, 
 				spatial_transform, temporal_transform,
@@ -77,7 +77,7 @@ def get_dataloader(root:str, mode:str,
 	data_set = torch.utils.data.ConcatDataset(all_dataset)
 
 	if infoBatch_epoch>0:		# TODO: need to test
-		from .InfoBatch import InfoBatch
+		from .utils.InfoBatch import InfoBatch
 		data_set = InfoBatch(data_set, num_epochs=infoBatch_epoch)
 		print("*** use infoBatch! Remember use \"loss_fun = nn.CrossEntropyLoss(reduction='none')\" and \"loss = dataset.update(loss)\" in training loop")
 
