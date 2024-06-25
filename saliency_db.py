@@ -54,7 +54,7 @@ def read_sal_text(txt_file):
 
 
 def make_dataset(root_path, annotation_path, salmap_path, audio_path,
-				 step, step_duration):
+				 step, step_duration, with_audio=True):
 	# 间隔step开始采样，采样长度是step_duration
 	# step=5, s_d=3: [0,1,2], [5,6,7] 
 	data = read_sal_text(annotation_path)
@@ -67,54 +67,58 @@ def make_dataset(root_path, annotation_path, salmap_path, audio_path,
 	audiodata= dict()
 
 	for i in range(len(video_names)):
-		# if i % 100 == 0:
-		# 	print('dataset loading [{}/{}]'.format(i, len(video_names)))
-
-		video_path = os.path.join(root_path, video_names[i])
-		annot_path = os.path.join(salmap_path, video_names[i], 'maps')
-		annot_path_bin = os.path.join(salmap_path, video_names[i])
-		audio_wav_path = os.path.join(audio_path,video_names[i])
-
-		audio_wav_path = audio_wav_path+'/'+ audio_wav_path.split('/')[-1]+'.wav'
-
-		if not os.path.exists(video_path) or not os.path.exists(annot_path) or \
-		   not os.path.exists(annot_path_bin) or not os.path.exists(audio_wav_path):
-			# print('Path does not all exist: {}'.format(video_path))
-			continue
 
 		n_frames = int(video_nframes[i])	# 此视频一共帧数
 		if n_frames < step_duration:
 			continue
 
-		# print(torchaudio.info(audio_wav_path))
-		[audiowav,Fs]=torchaudio.load(audio_wav_path)   # FS 是采样率，指代每秒钟采样的次数， audiowav 是一个tensor，第一维是声道数，第二维是采样点数
-                                                        # time = np.arange(0, len(audiowav)) * (1.0 / Fs)  # 计算声音的播放时间，单位为s
-		
-		# print(audiowav.max().item()<=2**15 and audiowav.min().item()>=(-2**15))
+		video_path = os.path.join(root_path, video_names[i])
+		annot_path = os.path.join(salmap_path, video_names[i], 'maps')
+		annot_path_bin = os.path.join(salmap_path, video_names[i])
 
-		n_samples = Fs/float(video_fps[i])  # n_samples: 音频每秒采样点数/视频每秒帧数 = 每帧对应的采样点数
-		starts=np.zeros(n_frames+1, dtype=int)
-		ends=np.zeros(n_frames+1, dtype=int)
 
-		starts[0]=0
-		ends[0]=0
+		if (not os.path.exists(video_path)) or (not os.path.exists(annot_path)) or (not os.path.exists(annot_path_bin)):
+			print('Path does not all exist: {}'.format(video_path))
+			continue
 
-		for videoframe in range(1,n_frames+1):
-			startemp=max(0,((videoframe-1)*(1.0/float(video_fps[i]))*Fs)-n_samples/2)
-            # 开始帧的采样点数 = ((当前帧位置/视频帧率)=(时间)) * (音频每秒采样点数) - (每帧对应的采样点数)/2
-			starts[videoframe] = int(startemp)
-			endtemp=min(audiowav.shape[1]-1,abs(((videoframe-1)*(1.0/float(video_fps[i]))*Fs)+n_samples/2))
-			ends[videoframe] = int(endtemp)
+		if with_audio:
 
-		audioinfo = {
-			'audiopath': audio_path,
-			'video_id': video_names[i],
-			'Fs' : Fs,
-			'wav' : audiowav,
-			'starts': starts,
-			'ends' : ends
-		}
-		audiodata[video_names[i]] = audioinfo
+			audio_wav_path = os.path.join(audio_path,video_names[i])
+			audio_wav_path = audio_wav_path+'/'+ audio_wav_path.split('/')[-1]+'.wav'
+
+			if not os.path.exists(audio_wav_path):
+				# print('Path does not all exist: {}'.format(audio_wav_path))
+				continue
+
+			# print(torchaudio.info(audio_wav_path))
+			[audiowav,Fs]=torchaudio.load(audio_wav_path)   # FS 是采样率，指代每秒钟采样的次数， audiowav 是一个tensor，第一维是声道数，第二维是采样点数
+															# time = np.arange(0, len(audiowav)) * (1.0 / Fs)  # 计算声音的播放时间，单位为s
+			
+			# print(audiowav.max().item()<=2**15 and audiowav.min().item()>=(-2**15))
+
+			n_samples = Fs/float(video_fps[i])  # n_samples: 音频每秒采样点数/视频每秒帧数 = 每帧对应的采样点数
+			starts=np.zeros(n_frames+1, dtype=int)
+			ends=np.zeros(n_frames+1, dtype=int)
+
+			starts[0]=0
+			ends[0]=0
+
+			for videoframe in range(1,n_frames+1):
+				startemp=max(0,((videoframe-1)*(1.0/float(video_fps[i]))*Fs)-n_samples/2)
+				# 开始帧的采样点数 = ((当前帧位置/视频帧率)=(时间)) * (音频每秒采样点数) - (每帧对应的采样点数)/2
+				starts[videoframe] = int(startemp)
+				endtemp=min(audiowav.shape[1]-1,abs(((videoframe-1)*(1.0/float(video_fps[i]))*Fs)+n_samples/2))
+				ends[videoframe] = int(endtemp)
+
+			audioinfo = {
+				'audiopath': audio_path,
+				'video_id': video_names[i],
+				'Fs' : Fs,
+				'wav' : audiowav,
+				'starts': starts,
+				'ends' : ends
+			}
+			audiodata[video_names[i]] = audioinfo
 
 		sample = {
 			'video': video_path,
@@ -129,6 +133,7 @@ def make_dataset(root_path, annotation_path, salmap_path, audio_path,
 		for j in range(1, n_frames, step):
 			sample_j = copy.deepcopy(sample)
 			sample_j['frame_indices'] = list(range(j, min(n_frames + 1, j + step_duration)))
+			med_indices = int(round(median(sample_j['frame_indices'])))
 			dataset.append(sample_j)
 
 	return dataset, audiodata
@@ -143,6 +148,7 @@ class saliency_db(Dataset):
 				 spatial_transform,
 				 spatial_transform_norm,
 				 temporal_transform,
+				 with_audio = True,
 				 exhaustive_sampling = False,
 				 sample_duration = 16,	# 最后要的长度
 				 step_duration = 90):	# 空余采样的长度
@@ -158,14 +164,17 @@ class saliency_db(Dataset):
 
 		self.data, self.audiodata = make_dataset(
 			root_path, annotation_path, subset, audio_path,
-			step, final_duration)	# 窗口移动的帧数， 窗口的长度
+			step, final_duration, with_audio=with_audio)	# 窗口移动的帧数， 窗口的长度
 
+		self.with_audio = with_audio
 		self.spatial_transform = spatial_transform
 		self.temporal_transform = temporal_transform
 		self.spatial_transform_norm = spatial_transform_norm
-		max_audio_Fs = 22050
-		min_video_fps = 10
-		self.max_audio_win = int(max_audio_Fs / min_video_fps * sample_duration)
+
+		if with_audio:
+			max_audio_Fs = 22050
+			min_video_fps = 10
+			self.max_audio_win = int(max_audio_Fs / min_video_fps * sample_duration)
 
 	def __getitem__(self, index):
 		path = self.data[index]['video']
@@ -175,35 +184,20 @@ class saliency_db(Dataset):
 		frame_indices = self.data[index]['frame_indices']
 		if self.temporal_transform is not None:
 			frame_indices = self.temporal_transform(frame_indices)
-
-		audioexcer  = torch.zeros(1,self.max_audio_win)  ## maximum audio excerpt duration
+		
 		data = {'rgb':[], 'audio':[]}
 		valid = {}
-		valid['audio']=0
-
-		frame_ind_start = frame_indices[0]
-		frame_ind_end = frame_indices[-1]
-
-		video_name=self.data[index]['video_id']
-		excerptstart = self.audiodata[video_name]['starts'][frame_ind_start]
-		excerptend = self.audiodata[video_name]['ends'][frame_ind_end]
-		
-		# valid['audio'] = self.audiodata[video_name]['wav'][:, excerptstart:excerptend+1].shape[1]
-		valid['audio'] = excerptend - excerptstart + 1
-
-		audioexcer_tmp = self.audiodata[video_name]['wav'][:, excerptstart:excerptend+1]
-		if (valid['audio']%2)==0:
-			audioexcer[:,((audioexcer.shape[1]//2)-(valid['audio']//2)):((audioexcer.shape[1]//2)+(valid['audio']//2))] = \
-				torch.from_numpy(np.hanning(audioexcer_tmp.shape[1])).float() * audioexcer_tmp
-		else:
-			audioexcer[:,((audioexcer.shape[1]//2)-(valid['audio']//2)):((audioexcer.shape[1]//2)+(valid['audio']//2)+1)] = \
-				torch.from_numpy(np.hanning(audioexcer_tmp.shape[1])).float() * audioexcer_tmp
-		data['audio'] = audioexcer.view(1,1,-1)
 
 		med_indices = int(round(median(frame_indices)))
+		bin_path = os.path.join(annot_path_bin, 'fixMap_{:05d}.mat'.format(med_indices))
+
+		if not os.path.exists(bin_path):
+			new_idx = np.random.choice(len(self.data))
+			return self.__getitem__(new_idx)
+
 		target = {'salmap':[],'binmap':[]}
 		target['salmap'] = pil_loader_sal(os.path.join(annot_path, 'eyeMap_{:05d}.jpg'.format(med_indices)))
-		tmp_mat = sio.loadmat(os.path.join(annot_path_bin, 'fixMap_{:05d}.mat'.format(med_indices)))
+		tmp_mat = sio.loadmat(bin_path)
 		binmap_np = np.array(Image.fromarray(tmp_mat['eyeMap'].astype(float)).resize((320, 240), resample = Image.BILINEAR)) > 0
 		target['binmap'] = Image.fromarray((255*binmap_np).astype('uint8'))
 		if self.exhaustive_sampling:
@@ -220,6 +214,29 @@ class saliency_db(Dataset):
 
 		valid['sal'] = 1
 		data['rgb'] = clip
+
+		if self.with_audio:
+			audioexcer  = torch.zeros(1,self.max_audio_win)  ## maximum audio excerpt duration
+			valid['audio']=0
+
+			frame_ind_start = frame_indices[0]
+			frame_ind_end = frame_indices[-1]
+
+			video_name=self.data[index]['video_id']
+			excerptstart = self.audiodata[video_name]['starts'][frame_ind_start]
+			excerptend = self.audiodata[video_name]['ends'][frame_ind_end]
+			
+			# valid['audio'] = self.audiodata[video_name]['wav'][:, excerptstart:excerptend+1].shape[1]
+			valid['audio'] = excerptend - excerptstart + 1
+
+			audioexcer_tmp = self.audiodata[video_name]['wav'][:, excerptstart:excerptend+1]
+			if (valid['audio']%2)==0:
+				audioexcer[:,((audioexcer.shape[1]//2)-(valid['audio']//2)):((audioexcer.shape[1]//2)+(valid['audio']//2))] = \
+					torch.from_numpy(np.hanning(audioexcer_tmp.shape[1])).float() * audioexcer_tmp
+			else:
+				audioexcer[:,((audioexcer.shape[1]//2)-(valid['audio']//2)):((audioexcer.shape[1]//2)+(valid['audio']//2)+1)] = \
+					torch.from_numpy(np.hanning(audioexcer_tmp.shape[1])).float() * audioexcer_tmp
+			data['audio'] = audioexcer.view(1,1,-1)
 
 		return data, target, valid
 

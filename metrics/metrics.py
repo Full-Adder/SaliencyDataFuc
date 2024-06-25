@@ -2,7 +2,30 @@ from functools import partial
 import numpy as np
 from numpy import random
 from skimage.transform import resize
+import torch
+import torch.nn.functional as F
 from .utils import normalize
+
+
+def SAL_BCE_logic(saliency_map1, saliency_map2):
+    """_summary_
+
+    Args:
+        saliency_map1 (_type_): _description_
+        saliency_map2 (_type_): _description_
+    """
+    saliency_map1 = torch.sigmoid(saliency_map1)
+    return F.binary_cross_entropy_with_logits(saliency_map1, saliency_map2).item()
+
+def SAL_MSE(saliency_map1, saliency_map2):
+    """_summary_
+
+    Args:
+        saliency_map1 (_type_): _description_
+        saliency_map2 (_type_): _description_
+    """
+    saliency_map1 = torch.sigmoid(saliency_map1)
+    return F.mse_loss(saliency_map1, saliency_map2).item()
 
 def AUC_Judd(saliency_map, fixation_map, jitter=True):
     '''

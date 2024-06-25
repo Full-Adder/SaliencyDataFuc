@@ -1,6 +1,19 @@
 import os
 import numpy as np
 import cv2
+import torch
+import torchvision
+import matplotlib.pyplot as plt
+
+def create_colormap_torch(img:torch.tensor, salmap:torch.tensor, size=(112,112)):
+    salmap = salmap.permute(1,2,0).cpu().numpy()
+    salmap = np.uint8((salmap - np.min(salmap)) / (np.max(salmap) - np.min(salmap) + 1e-5) * 255)
+    salmap = cv2.applyColorMap(salmap, cv2.COLORMAP_JET)
+    salmap = torch.tensor(salmap).permute(2,0,1).to('cuda')
+    # 将原始图像和热力图叠加
+    superimposed_img = salmap * 0.4 + img * 0.5
+    # 保存叠加后的图像
+    return superimposed_img
 
 
 def create_colormap(heatmap_path, img_path, save_path, size=(112,112)):
@@ -54,17 +67,24 @@ if __name__ == "__main__":
     # create_colormap('SaliencyDataFuc/eyeMap_00001.jpg', 'SaliencyDataFuc/img_00001.jpg', 'SaliencyDataFuc/color_map.jpg', (640, 480))
     
     # create_gt
-    sal_path = "/root/lanyun-tmp/data/annotations/"
-    img_path = "/root/lanyun-tmp/data/video_frames/"
-    save_path = "/root/lanyun-tmp/data/color_gt/"
-    for dataset in os.listdir(sal_path):
-        dataset_path = os.path.join(sal_path, dataset)
-        for video in os.listdir(dataset_path):
-            video_path = os.path.join(dataset_path, video)
-            saliency_pic = os.path.join(video_path, 'maps')
-            img_pic = os.path.join(img_path, dataset, video)
-            save_pic = os.path.join(save_path, dataset, video)
-            create_colormap_floader(saliency_pic, img_pic, save_pic, (640, 480))
+    # sal_path = "/root/lanyun-tmp/data/annotations/"
+    # img_path = "/root/lanyun-tmp/data/video_frames/"
+    # save_path = "/root/lanyun-tmp/data/color_gt/"
+    # for dataset in os.listdir(sal_path):
+    #     dataset_path = os.path.join(sal_path, dataset)
+    #     for video in os.listdir(dataset_path):
+    #         video_path = os.path.join(dataset_path, video)
+    #         saliency_pic = os.path.join(video_path, 'maps')
+    #         img_pic = os.path.join(img_path, dataset, video)
+    #         save_pic = os.path.join(save_path, dataset, video)
+    #         create_colormap_floader(saliency_pic, img_pic, save_pic, (640, 480))
+
+    img = torchvision.io.read_image('SaliencyDataFuc/source/img_00001.jpg')
+    sal = torchvision.io.read_image('SaliencyDataFuc/source/eyeMap_00001.jpg')
+
+    superimposed_img = create_colormap_torch(img, sal)
+    cv2.imwrite('superimposed_img.jpg', superimposed_img)
+
 
     
 

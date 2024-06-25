@@ -1,9 +1,10 @@
 import torch
-from saliency_db import saliency_db
-from transforms import TemporalRandomCrop, SpatialTransform, SpatialTransform_norm
+from .saliency_db import saliency_db
+from .transforms import TemporalRandomCrop, SpatialTransform, SpatialTransform_norm
 
 def get_dataloader(root:str, mode:str, task:str,
 				   datasetName_list:list=None, 
+				   with_audio:bool=True,
 				   batch_size:int=8, num_workers:int=4,
 				   sample_size:int=112,			# 输入尺寸
 				   sample_duration:int=16,		# 最终采样长度
@@ -16,20 +17,26 @@ def get_dataloader(root:str, mode:str, task:str,
 				   ):
 	
 	assert mode in ['train', 'val', 'test'], f"mode should be 'train', 'val' or 'test', but got {mode}"
-	assert task in ['class_increase', 'domain_increase'], f"task should be 'class_increase' or 'domain_increase', but got {task}"
+	assert task in ['class_increase', 'domain_increase', 'joint'], f"task should be 'class_increase' or 'domain_increase' or 'joint', but got {task}"
 	
-	if task == 'class_increase':
+	if task == 'domain_increase':
 		if datasetName_list == None:
-			datasetName_list = ['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD']
+			datasetName_list = ['Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD']	# miss DIEM
 		else:
 			for i in datasetName_list:
-				assert i in ['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD'], f"datasetName_list should be ['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD'], but got {datasetName_list}"
-	elif task == 'domain_increase':
+				assert i in ['Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD'], f"datasetName_list should be ['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD'], but got {i}"
+	elif task == 'class_increase':
 		if datasetName_list == None:
 			datasetName_list = ['doing', 'nature', 'society', 'something', 'talk']
 		else:
 			for i in datasetName_list:
-				assert i in ['doing', 'nature', 'society', 'something', 'talk'], f"datasetName_list should be ['doing', 'nature', 'society', 'something', 'talk'], but got {datasetName_list}"
+				assert i in ['doing', 'nature', 'society', 'something', 'talk'], f"datasetName_list should be ['doing', 'nature', 'society', 'something', 'talk'], but got {i}"
+	elif task == 'joint':
+		if datasetName_list == None:
+			datasetName_list = ['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD']
+		else:
+			for i in datasetName_list:
+				assert i in ['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD'], f"datasetName_list should be ['DIEM', 'Coutrot_db1', 'Coutrot_db2', 'SumMe', 'ETMD_av', 'AVAD'], but got {i}"
 
 	if spatial_transform == None:
 		spatial_transform = SpatialTransform(mode, sample_size)
@@ -41,16 +48,17 @@ def get_dataloader(root:str, mode:str, task:str,
 
 	txt_mode = 'train' if mode == 'train' else 'test' 
 	all_dataset = []
-
+  
 	for dataset_name in datasetName_list:
 		print(f"load dataset: {dataset_name}({mode})...")
 
-		if task == 'class_increase':
+		if task == 'domain_increase' or task == 'joint':
 			training_data = saliency_db(
 				f'{root}/video_frames/{dataset_name}/',
 				f'{root}/fold_lists/{dataset_name}_list_{txt_mode}_1_fps.txt',
 				f'{root}/annotations/{dataset_name}/',
 				f'{root}/video_audio/{dataset_name}/',
+				with_audio=with_audio,
 				spatial_transform=spatial_transform,
 				spatial_transform_norm=spatial_transform_norm,
 				temporal_transform= temporal_transform,
@@ -59,7 +67,7 @@ def get_dataloader(root:str, mode:str, task:str,
 				step_duration=step_duration,		# 窗口长度
 				)
 
-		elif task == 'domain_increase':
+		elif task == 'class_increase':
 			training_data = saliency_db(
 				f'{root}/video_frames/',
 				f'{root}/class_category/{dataset_name}_{txt_mode}.txt',
